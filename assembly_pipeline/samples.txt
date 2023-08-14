@@ -1,0 +1,10 @@
+wgs_id	barcode
+EEE013	barcode01
+GCGS0306	barcode02
+GCGS0313	barcode03
+UMASS-DGI_5	barcode04
+DGI9_parent	barcode05
+DGI9_IIa	barcode06
+DGI9_IIb	barcode07
+DGI9_IIc	barcode08
+DGI9_IIdeltaNHS	barcode09

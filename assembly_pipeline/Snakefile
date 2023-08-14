@@ -1,0 +1,65 @@
+import os
+
+SAMPLES = []
+BARCODE_DICT = {}
+
+with open('samples.txt', 'r') as infile:
+    for i,line in enumerate(infile):
+        if i > 0:
+            line = line.strip().split()
+            SAMPLES.append(line[0])
+            BARCODE_DICT[line[0]] = line[1]
+
+def get_input_fastqs(wildcards):
+    barcode = BARCODE_DICT[wildcards.sample]
+    barcode_directory = "20230621_demultiplexed/" + barcode
+    return [os.path.join(barcode_directory, f) for f in os.listdir(barcode_directory)]
+
+rule all:
+    input:
+        expand("medaka_polished/{sample}/consensus.fasta", sample = SAMPLES)
+
+rule merge_fastqs:
+    input:
+        get_input_fastqs
+    output:
+        "fastqs/{sample}.fastq.gz"
+    shell:
+        """
+        cat {input} > {output}
+        """
+
+rule flye:
+    input:
+        "fastqs/{sample}.fastq.gz"
+    output:
+        "flye/{sample}/assembly.fasta"
+    resources:
+        mem_mb=20000,
+        time=240
+    threads: 20
+    conda:
+        "conda_envs/flye.yml"
+    shell:
+        """
+            mkdir -p flye
+            flye --nano-hq {input} --out-dir flye/{wildcards.sample} -t 20
+        """
+
+rule medaka:
+    input:
+        fastq="fastqs/{sample}.fastq.gz",
+        assembly="flye/{sample}/assembly.fasta"
+    output:
+        "medaka_polished/{sample}/consensus.fasta"
+    resources:
+        mem_mb=10000,
+        time=120
+    threads: 1
+    conda:
+        "conda_envs/medaka.yml"
+    shell:
+        """
+            mkdir -p medaka_polished
+            medaka_consensus -i {input.fastq} -d {input.assembly} -o medaka_polished/{wildcards.sample} -t 1 -m r1041_e82_400bps_sup_g615
+        """
